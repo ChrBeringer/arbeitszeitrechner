@@ -16,10 +16,20 @@ Ein moderner, browserbasierter Arbeitszeitrechner, der präzise Berechnungen nac
 - **PWA-Support:** Als App auf dem Smartphone installierbar (Add to Homescreen).
 - **Responsive Design:** Dank Tailwind CSS optimiert für alle Endgeräte.
 
-## 🚀 Live-Demo & Nutzung
+## 🚀 Live-Demo & Benutzung
 
 Die App ist direkt im Browser nutzbar unter:
 👉 **[https://chrberinger.github.io/arbeitszeitrechner/](https://chrberinger.github.io/arbeitszeitrechner/)**
+
+### Schnellzugriff per QR-Code:
+Scanne diesen Code mit deiner Handy-Kamera, um die App sofort zu öffnen:
+
+![QR Code zur App](https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://chrberinger.github.io/arbeitszeitrechner/)
+
+### Nutzung als Handy-App (Installation):
+1. Öffne den Link oder scanne den QR-Code.
+2. **iOS:** Tippe auf das **"Teilen"**-Icon und wähle **"Zum Home-Bildschirm"**.
+3. **Android:** Tippe auf die drei Punkte und wähle **"App installieren"**.
 
 ### Lokal ausführen:
 1. Klone das Repository:
