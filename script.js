@@ -153,4 +153,38 @@ const minutesToHours = (m) => {
     const hrs = Math.floor(m/60); 
     const mins = m%60; 
     return `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}`; 
+
 };
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+        reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // Neues Update gefunden! Banner zeigen.
+                    document.getElementById('update-banner').classList.remove('hidden');
+                }
+            });
+        });
+    });
+
+    // Logik für den Update-Button
+    document.getElementById('reload-app').addEventListener('click', () => {
+        navigator.serviceWorker.getRegistration().then(reg => {
+            if (reg.waiting) {
+                // Signal an den Service Worker senden, das Update zu aktivieren
+                reg.waiting.postMessage('skipWaiting');
+            }
+        });
+    });
+
+    // Seite neu laden, sobald der neue Service Worker übernommen hat
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+            window.location.reload();
+            refreshing = true;
+        }
+    });
+}
