@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arbeitszeitrechner Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8 font-sans">
+
+    <main class="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
+        <header class="bg-indigo-700 p-8 text-white">
+            <h1 class="text-3xl font-extrabold tracking-tight">Arbeitszeitrechner</h1>
+            <p class="text-indigo-100 opacity-90 mt-1">Präzise Berechnung nach dem Arbeitszeitgesetz</p>
+        </header>
+
+        <section class="p-6 md:p-10">
+            <div class="mb-10 p-6 bg-indigo-50 rounded-2xl border border-indigo-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div class="flex-1">
+                    <label for="target-time" class="block text-sm font-bold text-indigo-900 mb-2 uppercase tracking-wide">Tägliche Sollzeit (HH:mm)</label>
+                    <input type="time" id="target-time" class="text-xl font-semibold border-slate-300 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 w-full md:w-32" value="08:00">
+                </div>
+                <div class="flex-1 text-sm text-indigo-700 leading-relaxed bg-white/50 p-4 rounded-lg">
+                    <strong>Pausen-Logik:</strong> Abzug erfolgt nur bei Blöcken "am Stück":<br>
+                    • Ab 6 Std: 30 Min. | • Ab 9 Std: 45 Min.
+                </div>
+            </div>
+
+            <div class="hidden md:grid grid-cols-12 gap-4 mb-4 font-bold text-slate-500 px-4 uppercase text-xs tracking-widest">
+                <div class="col-span-3">Kommen</div>
+                <div class="col-span-3">Gehen</div>
+                <div class="col-span-4 text-center">Netto-Arbeitszeit</div>
+                <div class="col-span-2 text-right">Aktion</div>
+            </div>
+
+            <div id="rows-container" class="space-y-4 mb-8">
+                </div>
+
+            <div class="flex flex-wrap items-center gap-4 mb-10 pb-10 border-b border-slate-100">
+                <button id="btn-add-row" class="bg-white border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50 px-6 py-2.5 rounded-xl font-bold transition flex items-center gap-2">
+                    <span class="text-xl">+</span> Zeile hinzufügen
+                </button>
+                <button id="btn-calculate" class="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 transition transform active:scale-95">
+                    Jetzt Berechnen
+                </button>
+                <button id="btn-clear" class="text-slate-400 hover:text-red-500 text-sm font-medium transition ml-auto">
+                    Alle Daten zurücksetzen
+                </button>
+            </div>
+
+            <div id="result-box" class="bg-slate-900 rounded-3xl p-8 text-white hidden row-fade-in">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                    <div class="text-center md:text-left">
+                        <p class="text-slate-400 text-xs uppercase font-bold tracking-widest mb-2">Gesamt Netto</p>
+                        <p id="total-time-display" class="text-5xl font-black text-white">00:00 h</p>
+                    </div>
+                    <div class="text-center md:text-left border-y md:border-y-0 md:border-x border-slate-700 py-6 md:py-0 md:px-8">
+                        <p class="text-slate-400 text-xs uppercase font-bold tracking-widest mb-2">Differenz (Soll)</p>
+                        <p id="diff-time-display" class="text-5xl font-black text-emerald-400">±00:00 h</p>
+                    </div>
+                    <div id="break-info-display" class="text-sm text-slate-300 bg-slate-800 p-4 rounded-xl border border-slate-700 italic">
+                        </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js" type="module"></script>
+</body>
+</html>
