@@ -135,6 +135,9 @@ function loadData() {
         targetTimeInput.value = data.target || "08:00";
         rowsContainer.innerHTML = '';
         data.starts.forEach((s, i) => addRow(s, data.ends[i]));
+        
+        // NEU: Sofort berechnen, wenn Daten geladen wurden!
+        calculateTotal(); 
     } else {
         addRow();
     }
