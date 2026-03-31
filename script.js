@@ -10,7 +10,7 @@ const rowsContainer = document.getElementById('rows-container');
 const targetTimeInput = document.getElementById('target-time');
 const resultBox = document.getElementById('result-box');
 
-// Initial State für UI
+// Initial State für UI-Einstellungen (aus LocalStorage oder Default)
 let uiPrefs = JSON.parse(localStorage.getItem(PREFS_KEY)) || {
     showNetto: true,
     showActions: true,
@@ -27,9 +27,11 @@ function setupEventListeners() {
     document.getElementById('btn-add-row').addEventListener('click', () => addRow());
     document.getElementById('btn-calculate').addEventListener('click', calculateTotal);
     document.getElementById('btn-clear').addEventListener('click', clearAll);
+    
+    // Automatisch speichern wenn Sollzeit geändert wird
     targetTimeInput.addEventListener('change', saveData);
 
-    // Live-Save bei Input-Änderung (Event Delegation)
+    // Event Delegation für Eingabefelder in den Zeilen
     rowsContainer.addEventListener('change', (e) => {
         if (e.target.type === 'time') saveData();
     });
@@ -40,7 +42,7 @@ function setupEventListeners() {
         if (btn) removeRow(btn.dataset.id);
     });
 
-    // UI-Toggles (Sichtbarkeit)
+    // UI-Toggles (Sichtbarkeit der Spalten)
     document.querySelectorAll('.ui-toggle').forEach(cb => {
         cb.addEventListener('change', (e) => {
             const prefKey = e.target.id.replace('pref-', '');
@@ -52,7 +54,7 @@ function setupEventListeners() {
 }
 
 function initUI() {
-    // Checkboxen auf gespeicherten Stand setzen
+    // Checkboxen im Header auf gespeicherten Stand setzen
     for (const key in uiPrefs) {
         const cb = document.getElementById(`pref-${key}`);
         if (cb) cb.checked = uiPrefs[key];
@@ -61,9 +63,12 @@ function initUI() {
 }
 
 function applyUIPrefs() {
+    // Spalten ein-/ausblenden basierend auf Präferenzen
     document.querySelectorAll('.js-col-netto').forEach(el => el.classList.toggle('hidden-column', !uiPrefs.showNetto));
     document.querySelectorAll('.js-col-actions').forEach(el => el.classList.toggle('hidden-column', !uiPrefs.showActions));
-    document.getElementById('res-rest-container').classList.toggle('hidden', !uiPrefs.showRest);
+    
+    const restContainer = document.getElementById('res-rest-container');
+    if (restContainer) restContainer.classList.toggle('hidden', !uiPrefs.showRest);
 }
 
 function addRow(start = "08:00", end = "16:30") {
@@ -93,7 +98,7 @@ function addRow(start = "08:00", end = "16:30") {
         </div>
     `;
     rowsContainer.appendChild(row);
-    applyUIPrefs();
+    applyUIPrefs(); // UI-Status auf neue Zeile anwenden
     saveData();
 }
 
@@ -114,53 +119,71 @@ function calculateTotal() {
     let lastEndMinutes = 0;
 
     starts.forEach((startInput, index) => {
-        const startMin = timeToMinutes(startInput.value);
-        const endMin = timeToMinutes(ends[index].value);
-        
-        // Letzte Endzeit für Ruhezeit merken
-        if (endMin > lastEndMinutes) lastEndMinutes = endMin;
+        const startVal = startInput.value;
+        const endVal = ends[index].value;
 
-        let bruteDiff = endMin - startMin;
-        if (bruteDiff < 0) bruteDiff += 1440; // Nachtschicht-Check
+        if (startVal && endVal) {
+            const startMin = timeToMinutes(startVal);
+            const endMin = timeToMinutes(endVal);
+            
+            // WICHTIG: Ruhezeit beginnt nach der letzten "Gehen"-Zeit
+            // Wir nehmen hier einfach die höchste Endzeit des Tages
+            if (endMin > lastEndMinutes) lastEndMinutes = endMin;
 
-        let breakTime = 0;
-        if (bruteDiff > 540) breakTime = 45;
-        else if (bruteDiff > 360) breakTime = 30;
+            let bruteDiff = endMin - startMin;
+            if (bruteDiff < 0) bruteDiff += 1440; // Nachtschicht/Über Mitternacht
 
-        const netDiff = bruteDiff - breakTime;
-        totalMinutesNetto += netDiff;
-        totalBreakDeducted += breakTime;
+            let breakTime = 0;
+            if (bruteDiff > 540) breakTime = 45;      // > 9 Std
+            else if (bruteDiff > 360) breakTime = 30; // > 6 Std
 
-        results[index].innerHTML = `<span class="text-indigo-600 font-bold">${minutesToHours(netDiff)}</span>` + 
-            (breakTime > 0 ? `<br><span class="text-[9px] text-amber-500 font-bold uppercase">-${breakTime}m Pause</span>` : "");
+            const netDiff = Math.max(0, bruteDiff - breakTime);
+            totalMinutesNetto += netDiff;
+            totalBreakDeducted += breakTime;
+
+            results[index].innerHTML = `<span class="text-indigo-600 font-bold">${minutesToHours(netDiff)}</span>` + 
+                (breakTime > 0 ? `<br><span class="text-[9px] text-amber-500 font-bold uppercase">-${breakTime}m Pause</span>` : "");
+        }
     });
 
-    // Ergebnisse anzeigen
+    if (lastEndMinutes === 0) return; // Nichts zu berechnen
+
+    // Dashboard einblenden
     resultBox.classList.remove('hidden');
     
-    // 1. Arbeitszeit & Differenz
-    const targetMin = timeToMinutes(targetTimeInput.value);
+    // 1. Arbeitszeit & Differenz berechnen
+    const targetMin = timeToMinutes(targetTimeInput.value || "08:00");
     const diff = totalMinutesNetto - targetMin;
     
     document.getElementById('total-time-display').innerText = minutesToHours(totalMinutesNetto) + " h";
-    document.getElementById('break-info-display').innerText = `Abzug gesamt: ${totalBreakDeducted} Min.`;
+    document.getElementById('break-info-display').innerText = `Pausen-Abzug: ${totalBreakDeducted} Min.`;
     
     const diffEl = document.getElementById('diff-time-display');
-    diffEl.innerText = (diff >= 0 ? "+" : "-") + minutesToHours(Math.abs(diff)) + " h";
+    const prefix = diff >= 0 ? "+" : "-";
+    diffEl.innerText = `${prefix}${minutesToHours(Math.abs(diff))} h`;
     diffEl.className = diff >= 0 ? "text-5xl font-black text-emerald-400" : "text-5xl font-black text-red-400";
 
-    // 2. Ruhezeit-Check (11h)
-    let nextStart = lastEndMinutes + (11 * 60);
-    if (nextStart >= 1440) nextStart -= 1440;
-    document.getElementById('earliest-start-display').innerText = minutesToHours(nextStart) + " Uhr";
+    // 2. Ruhezeit berechnen (11 Stunden = 660 Minuten)
+    let nextStart = lastEndMinutes + 660; 
+    if (nextStart >= 1440) nextStart -= 1440; // Umbruch wenn am nächsten Tag
 
-    resultBox.scrollIntoView({ behavior: 'smooth' });
+    const restDisplay = document.getElementById('earliest-start-display');
+    if (restDisplay) {
+        restDisplay.innerText = minutesToHours(nextStart) + " Uhr";
+    }
+
+    // Scroll zum Ergebnis
+    resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function saveData() {
     const starts = Array.from(document.querySelectorAll('.start-time')).map(i => i.value);
     const ends = Array.from(document.querySelectorAll('.end-time')).map(i => i.value);
-    localStorage.setItem(DATA_KEY, JSON.stringify({ starts, ends, target: targetTimeInput.value }));
+    localStorage.setItem(DATA_KEY, JSON.stringify({ 
+        starts, 
+        ends, 
+        target: targetTimeInput.value 
+    }));
 }
 
 function loadData() {
@@ -168,21 +191,28 @@ function loadData() {
     if (saved) {
         const data = JSON.parse(saved);
         targetTimeInput.value = data.target || "08:00";
+        // Existierende Zeilen leeren falls nötig
+        rowsContainer.innerHTML = '';
         data.starts.forEach((s, i) => addRow(s, data.ends[i]));
     } else {
-        addRow();
+        addRow(); // Standardmäßig eine Zeile
     }
 }
 
 function clearAll() {
-    if(confirm("Alle Daten löschen?")) {
+    if(confirm("Alle gespeicherten Zeiten löschen?")) {
         localStorage.removeItem(DATA_KEY);
         location.reload();
     }
 }
 
-// Helpers
-const timeToMinutes = (t) => { const [h,m] = t.split(':').map(Number); return h*60+m; };
+// Utility Helpers
+const timeToMinutes = (t) => { 
+    if(!t) return 0;
+    const [h,m] = t.split(':').map(Number); 
+    return (h*60) + m; 
+};
+
 const minutesToHours = (m) => { 
     const hrs = Math.floor(m/60); 
     const mins = m%60; 
