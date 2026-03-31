@@ -97,10 +97,7 @@ function calculateTotal() {
     let totalMinutesNetto = 0;
     let totalBreakDeducted = 0;
 
-    // Wir holen explizit die Gehen-Zeit der LETZTEN Zeile
-    const lastEndInput = ends[ends.length - 1];
-    const lastEndVal = lastEndInput ? lastEndInput.value : null;
-
+    // 1. Netto-Zeiten der Zeilen berechnen
     starts.forEach((startInput, index) => {
         const sVal = startInput.value;
         const eVal = ends[index].value;
@@ -125,26 +122,28 @@ function calculateTotal() {
         }
     });
 
-    if (totalMinutesNetto === 0 && !lastEndVal) return;
-
-    resultBox.classList.remove('hidden');
-    
-    // 1. Arbeitszeit & Differenz
-    const targetMin = timeToMinutes(targetTimeInput.value || "08:00");
-    const diff = totalMinutesNetto - targetMin;
-    document.getElementById('total-time-display').innerText = minutesToHours(totalMinutesNetto) + " h";
-    document.getElementById('break-info-display').innerText = `Pausen-Abzug: ${totalBreakDeducted} Min.`;
-    
-    const diffEl = document.getElementById('diff-time-display');
-    diffEl.innerText = (diff >= 0 ? "+" : "-") + minutesToHours(Math.abs(diff)) + " h";
-    diffEl.className = diff >= 0 ? "text-5xl font-black text-emerald-400" : "text-5xl font-black text-red-400";
-
-    // 2. Ruhezeit-Logik: Letzte Zeile + 11h (660 Min)
-    if (lastEndVal) {
-        let nextStartMin = timeToMinutes(lastEndVal) + 660;
+    // 2. Ruhezeit-Berechnung (STRENG basierend auf der LETZTEN Zeile)
+    const lastRowEndField = ends[ends.length - 1];
+    if (lastRowEndField && lastRowEndField.value) {
+        let lastEndMin = timeToMinutes(lastRowEndField.value);
+        let nextStartMin = lastEndMin + 660; // +11 Stunden
         if (nextStartMin >= 1440) nextStartMin -= 1440;
+        
         document.getElementById('earliest-start-display').innerText = minutesToHours(nextStartMin) + " Uhr";
     }
+
+    // 3. Dashboard befüllen
+    resultBox.classList.remove('hidden');
+    const targetMin = timeToMinutes(targetTimeInput.value || "08:00");
+    const diff = totalMinutesNetto - targetMin;
+    
+    document.getElementById('total-time-display').innerText = minutesToHours(totalMinutesNetto) + " h";
+    document.getElementById('break-info-display').innerText = totalBreakDeducted > 0 ? `Pausen-Abzug: ${totalBreakDeducted} Min.` : "Kein Pausenabzug erfolgt.";
+    
+    const diffEl = document.getElementById('diff-time-display');
+    const prefix = diff >= 0 ? "+" : "-";
+    diffEl.innerText = `${prefix}${minutesToHours(Math.abs(diff))} h`;
+    diffEl.className = diff >= 0 ? "text-5xl font-black text-emerald-400" : "text-5xl font-black text-red-400";
 
     resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
